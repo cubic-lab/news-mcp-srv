@@ -1,0 +1,17 @@
+{
+  "tasks": {
+    "start": "deno run -A --watch main.ts",
+    "inspect": "npx @modelcontextprotocol/inspector",
+    "test": "deno test"
+  },
+  "imports": {
+    "@deno-library/logger": "jsr:@deno-library/logger@^1.2.0",
+    "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.10.0",
+    "@std/assert": "jsr:@std/assert@1",
+    "@std/dotenv": "jsr:@std/dotenv@^0.225.3",
+    "@supabase/supabase-js": "jsr:@supabase/supabase-js@^2.49.4",
+    "express": "npm:express@^5.1.0",
+    "zod": "npm:zod@^3.24.3",
+    "zod-to-json-schema": "npm:zod-to-json-schema@^3.24.5"
+  }
+}
