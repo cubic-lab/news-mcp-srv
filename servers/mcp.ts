@@ -1,6 +1,6 @@
 import "jsr:@std/dotenv/load";
 import { Server } from "npm:@modelcontextprotocol/sdk/server/index.js";
-import { ListToolsRequestSchema, CallToolRequestSchema } from "npm:@modelcontextprotocol/sdk/types.js";
+import { ListToolsRequestSchema, CallToolRequestSchema, ListPromptsRequestSchema, ListResourcesRequestSchema, GetPromptRequestSchema } from "npm:@modelcontextprotocol/sdk/types.js";
 import { zodToJsonSchema } from "npm:zod-to-json-schema";
 import { createClient } from "jsr:@supabase/supabase-js"
 import { Logger } from "jsr:@deno-library/logger";
@@ -40,6 +40,56 @@ mcpServer.setRequestHandler(ListToolsRequestSchema, () => {
   };
 });
 
+mcpServer.setRequestHandler(ListResourcesRequestSchema, () => {
+  return {
+    resources: [],
+  };
+})
+
+mcpServer.setRequestHandler(ListPromptsRequestSchema, () => {
+  return {
+    prompts: [
+      {
+        name: "收集新闻",
+        description:
+          "将新闻/项目链接制作为周报文案，返回包含 url、title、content 的 JSON 结构",
+        arguments: [
+          {
+            name: "link",
+            description: "新闻链接，例如 https://www.dask.org/",
+            required: true,
+          },
+        ],
+      },
+    ]
+  };
+})
+
+mcpServer.setRequestHandler(GetPromptRequestSchema, (request) => {
+  const { name, arguments: args } = request.params;
+
+  switch (name) {
+    case "收集新闻":
+      if (!args?.link) {
+        throw new Error(`"link" is required`);
+      }
+      return {
+        description: "将新闻/项目链接制作为周报文案",
+        messages: [
+          {
+            role: "user",
+            content: {
+              type: "text",
+              text: `请从链接 "${args.link}" 中读取新闻，并转换为科技周报文案。`,
+            },
+          },
+        ],
+      };
+    default:
+      throw new Error(`Unknown prompt: ${name}`);
+  }
+});
+
 mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
@@ -77,7 +127,7 @@ mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
               title: news.title,
               content: news.content,
               draft: true,
-              tags: news.tags,
+              tags: news.tags.join(','),
             },
           ])
           .select()
@@ -107,6 +157,7 @@ mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
         throw new Error(`Unknown tool: ${name}`);
     }
   } catch (error) {
+    logger.error(`failed to do ${name}`, error);
     if (error instanceof z.ZodError) {
       throw new Error(
         `Invalid arguments: ${error.errors
